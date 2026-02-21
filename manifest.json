@@ -11,6 +11,6 @@
   },
   "scopes": ["mail:read", "mail:write"],
   "compose": "docker-compose.yml",
-  "provides": ["mail:compose"],
-  "consumes": ["files:pick", "contacts:pick"]
+  "provides": ["mail:compose", "mail:compose-with-files"],
+  "consumes": ["files:pick", "contacts:pick", "calendar:add-event"]
 }

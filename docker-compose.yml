@@ -33,6 +33,10 @@ services:
       - ./config/stalwart:/etc/stalwart
     environment:
       TZ: UTC
+      MAIL_DOMAIN: ${MAIL_DOMAIN:-mail.fuzzypeanut.local}
+      # JWKS endpoint of your Authentik instance — required for OIDC bearer token auth.
+      # Example: https://auth.fuzzypeanut.local/application/o/fuzzypeanut/.well-known/jwks.json
+      AUTHENTIK_JWKS_URL: ${AUTHENTIK_JWKS_URL:-}
 
 volumes:
   stalwart-data:

@@ -1,0 +1,89 @@
+##############################################################################
+# Stalwart Mail Server — FuzzyPeanut starter configuration
+#
+# Full reference: https://stalw.art/docs/management/settings
+#
+# Environment variables referenced here must be set in docker-compose.yml:
+#   MAIL_DOMAIN          — mail server hostname (e.g. mail.fuzzypeanut.local)
+#   AUTHENTIK_JWKS_URL   — Authentik JWKS endpoint for bearer token validation
+#                          e.g. https://auth.fuzzypeanut.local/application/o/fuzzypeanut/.well-known/jwks.json
+#
+# IMPORTANT: The OIDC/OAuth section below is a template. Verify the exact
+# config key names against your Stalwart version's documentation before deploying.
+# https://stalw.art/docs/auth/authorization
+##############################################################################
+
+[server]
+hostname = "%{env:MAIL_DOMAIN}%"
+tls.ignore-client-order = true
+
+# ── Listeners ────────────────────────────────────────────────────────────────
+
+[server.listener."jmap"]
+bind = ["0.0.0.0:8080"]
+protocol = "http"
+
+[server.listener."smtp"]
+bind = ["0.0.0.0:25"]
+protocol = "smtp"
+
+[server.listener."submission"]
+bind = ["0.0.0.0:587"]
+protocol = "smtp"
+
+[server.listener."imaps"]
+bind = ["0.0.0.0:993"]
+protocol = "imap"
+tls.implicit = true
+
+# ── Storage (RocksDB — replace with PostgreSQL for production) ───────────────
+
+[store."rocksdb"]
+type = "rocksdb"
+path = "/opt/stalwart/data"
+compression = "lz4"
+
+[storage]
+data = "rocksdb"
+blob = "rocksdb"
+fts = "rocksdb"
+lookup = "rocksdb"
+
+# ── JMAP ─────────────────────────────────────────────────────────────────────
+
+[jmap.protocol]
+# Allow CORS requests from the shell (adjust for production)
+set.cors-allow-origin = "*"
+
+[jmap.upload]
+max-size = 52428800  # 50 MiB
+
+# ── OIDC bearer token authentication ─────────────────────────────────────────
+# Stalwart validates Bearer tokens issued by Authentik using its JWKS endpoint.
+# The 'preferred_username' claim is mapped to the local account name.
+#
+# Refer to Stalwart's auth docs for the exact keys for your version:
+# https://stalw.art/docs/auth/oauth
+
+[auth.oauth]
+key.type = "jwks"
+key.url = "%{env:AUTHENTIK_JWKS_URL}%"
+principal-claim = "preferred_username"
+
+# ── SMTP ─────────────────────────────────────────────────────────────────────
+
+[smtp.auth]
+# Require auth for submission (port 587)
+require = true
+allow-plain-text = false
+
+[smtp.ehlo]
+reject-non-fqdn = false
+
+# ── Sieve (server-side filtering) ─────────────────────────────────────────────
+# Stalwart applies these rules for all incoming messages.
+
+[sieve.limits]
+redirects = 3
+out-messages = 5
+received-headers = 50

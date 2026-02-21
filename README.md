@@ -1,42 +1,63 @@
-# sv
+# module-mail
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+FuzzyPeanut Mail module — Svelte webmail client backed by [Stalwart](https://stalw.art), a modern Rust mail server (SMTP/IMAP/JMAP).
 
-## Creating a project
+## What it does
 
-If you're seeing this, you've probably already done this step. Congrats!
+- Full mailbox view with thread grouping (JMAP `Thread/get`)
+- Read emails: HTML body with DOMPurify sanitization, plain text fallback
+- Compose and send with draft autosave every 30s
+- Cross-module integration: attach files from module-files, pick contacts from module-contacts, accept calendar invites into module-calendar
+- Auto-provisioned mailboxes via the auth provisioning service
 
-```sh
-# create a new project
-npx sv create my-app
+## Services
+
+| Service | Port | Description |
+|---|---|---|
+| `mail-ui` | 3001 | Nginx serving the compiled `remoteEntry.js` |
+| `mail-registrar` | — | One-shot: registers this module with the shell registry |
+| `stalwart` | 8080 (JMAP), 25, 587, 993 | All-in-one mail server |
+
+## Quick start
+
+```bash
+# Required environment variables (see docker-compose.yml)
+REGISTRY_URL=http://shell-registry:3100
+MODULE_UI_URL=http://localhost:3001
+MAIL_DOMAIN=mail.fuzzypeanut.local
+AUTHENTIK_JWKS_URL=https://auth.fuzzypeanut.local/application/o/fuzzypeanut/.well-known/jwks.json
+
+docker compose up
 ```
 
-To recreate this project with the same configuration:
+## Stalwart OIDC configuration
 
-```sh
-# recreate this project
-npx sv create --template minimal --types ts --no-install .
+Stalwart validates JMAP Bearer tokens using Authentik's JWKS endpoint. The starter config at `config/stalwart/config.toml` includes the OIDC section as a template — **verify the config key names against your Stalwart version's docs** before deploying:
+
+- https://stalw.art/docs/auth/oauth
+
+Set `AUTHENTIK_JWKS_URL` in your environment to the Authentik JWKS URL for your FuzzyPeanut application:
+
+```
+https://<authentik-host>/application/o/fuzzypeanut/.well-known/jwks.json
 ```
 
-## Developing
+## Development
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+```bash
+npm install
+npm run build        # produces dist/remoteEntry.js
+npm run dev          # watch mode
 ```
 
-## Building
+The module is a Vite library build (not a SvelteKit app). `src/index.ts` exports the `FPModule` default.
 
-To create a production version of your app:
+## Module events
 
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+| Event | Direction | Description |
+|---|---|---|
+| `mail:compose` | consumed | Open compose with optional to/subject/body pre-fill |
+| `mail:compose-with-files` | consumed | Open compose with file references pre-loaded |
+| `files:pick` | emitted | Request file picker (requires module-files) |
+| `contacts:pick` | emitted | Request contact picker (requires module-contacts) |
+| `calendar:add-event` | emitted | Accept calendar invite (requires module-calendar) |
