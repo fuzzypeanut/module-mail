@@ -1,0 +1,16 @@
+{
+  "id": "fuzzypeanut-mail",
+  "displayName": "Mail",
+  "version": "0.1.0",
+  "remoteEntry": "/remoteEntry.js",
+  "routes": ["/mail"],
+  "nav": {
+    "label": "Mail",
+    "icon": "✉️",
+    "order": 1
+  },
+  "scopes": ["mail:read", "mail:write"],
+  "compose": "docker-compose.yml",
+  "provides": ["mail:compose"],
+  "consumes": ["files:pick", "contacts:pick"]
+}

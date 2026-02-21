@@ -1,0 +1,5 @@
+FROM python:3.12-slim
+WORKDIR /app
+COPY registrar.py .
+COPY manifest.json /manifest.json
+CMD ["python", "registrar.py"]

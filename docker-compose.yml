@@ -1,0 +1,38 @@
+services:
+  # Serves the built remoteEntry.js to the shell
+  mail-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    ports:
+      - "3001:80"
+    depends_on:
+      - stalwart
+
+  # Registers this module with the shell registry on startup
+  mail-registrar:
+    build:
+      context: .
+      dockerfile: Dockerfile.registrar
+    environment:
+      REGISTRY_URL: ${REGISTRY_URL:-http://shell-registry:3100}
+      MODULE_UI_URL: ${MODULE_UI_URL:-http://localhost:3001}
+    depends_on:
+      - mail-ui
+
+  # Stalwart all-in-one mail server (SMTP + IMAP + JMAP)
+  stalwart:
+    image: stalwartlabs/mail-server:latest
+    ports:
+      - "8080:8080"   # JMAP / admin API
+      - "25:25"       # SMTP
+      - "587:587"     # SMTP submission
+      - "993:993"     # IMAPS
+    volumes:
+      - stalwart-data:/opt/stalwart
+      - ./config/stalwart:/etc/stalwart
+    environment:
+      TZ: UTC
+
+volumes:
+  stalwart-data:
